@@ -5,6 +5,9 @@ The saltcluster.py script facilitates the setup and running of a
 salt cluster in docker containers on a single host, intended for
 use in a testing environment.
 
+NOTE: This has been tested (only) on Fedora 20 with docker 0.7.0,
+0.7.5 and 0.7.6.
+
 How to use:
 
 all of the following should be done as root, except for
