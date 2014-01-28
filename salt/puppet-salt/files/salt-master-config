@@ -1,0 +1,10 @@
+worker_threads: 25
+max_open_files: 3000
+
+runner_dirs: ['/srv/runners']
+
+file_roots:
+  base:
+    - /srv/salt
+
+auto_accept: True
