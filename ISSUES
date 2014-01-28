@@ -1,0 +1,55 @@
+The files in salt/puppet-salt should get turned into a package
+for remote install instead of living on local disk and being
+ADDed to the base salt image.
+
+getaddrinfo() in python 2.7 is busted with some of the hostnames
+that Docker generates (those that are sequences of decimal digits).
+This meant some kludges in pupaas.py which could probably be
+handled better.
+
+Docker and/or lxc don't seem to do well with multiple configures/stops
+at the same time. Maybe it's a thread-safe issue, maybe something else.
+Needs more investigation.  If that ever gets resolved, we should
+be clever about how many threads get allocated for starts/configures/
+stops/deletes based on load, number of processors, memory.
+
+Why does memory use increase so dramatically over time for a running
+(and doing virtually nothing) cluster?  lxc or docker memory leak
+or something else?
+
+Should provide for export and flattening of salt base image in
+scripts.
+
+ssh scripts should not depend on /usr/bin/bash for location of bash
+since under ubuntu it's /bin/bash.
+
+Should do better about installing ruby custom fact file in a
+nice location.
+
+The hacked libselinux lib needs testing in the case that folks
+want selinux to work (I expect it does not).
+
+Sometimes configuration of one or two minions fails.  This can
+be worked around by configuring just the specific minion
+but it's a PITA and should be debugged.
+
+There's no nice way to terminate all the processes before
+doing saltcluster --stop.
+
+There ought to be a way to shut down all the pupaas processes
+after configuration. (OK, you'll say, 'just run salt on it' :-P)
+
+Be cleverer about the root password.  Maybe allow ssh keys,
+who knows.  For a testbed it's ok this way I guess.
+
+Have a nice way to update the base image from latest salt git
+commit without rebuilding from scratch.
+
+Use short forms of the tag in minion/master names when the
+tag is $random-git-commit.
+
+
+
+
+
+
