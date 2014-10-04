@@ -20,14 +20,8 @@ or something else?
 Should provide for export and flattening of salt base image in
 scripts.
 
-ssh scripts should not depend on /usr/bin/bash for location of bash
-since under ubuntu it's /bin/bash.
-
 Should do better about installing ruby custom fact file in a
 nice location.
-
-The hacked libselinux lib needs testing in the case that folks
-want selinux to work (I expect it does not).
 
 Sometimes configuration of one or two minions fails.  This can
 be worked around by configuring just the specific minion

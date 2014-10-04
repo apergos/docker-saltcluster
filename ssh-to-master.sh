@@ -1,21 +1,23 @@
 #!/bin/bash
 
 if [ -z "$1" ]; then
-    echo "This script wil ssh into the salt master as root."
+    echo "This script will ssh into the salt master as root."
     echo
-    echo "Usage: $0 tag-string-here [salt-master-basename]"
+    echo "Usage: $0 <mastertag> [<salt-master-basename>]"
     echo
-    echo "Example: $0 v0.15.0"
+    echo "Example: $0 lucid:0.17.1-1lucid_all:deb"
     exit 1
 fi
 
+tagspec=`echo "$1" | sed -e 's/:/-/g; s/[^a-zA-Z0-9_.\-]//g;'`
+
 if [ ! -z "$2" ]; then
-    HOST="${2}-${1}"
+    HOST="${2}-${tagspec}"
 else
-    HOST="saltmaster-${1}"
+    HOST="master-${tagspec}"
 fi
 
-IPADDR=`docker inspect "-format={{.NetworkSettings.IPAddress}}" "$HOST"`
+IPADDR=`docker inspect "--format={{.NetworkSettings.IPAddress}}" "$HOST"`
 
 if [ -z "$IPADDR" ]; then
     echo "Failed to find IP address for $HOST"
@@ -24,4 +26,4 @@ else
     echo "$IPADDR"
 fi
 
-ssh -l root "$IPADDR"
+ssh -l root -o "StrictHostKeyChecking no" -o "UserKnownHostsFile /dev/null" "$IPADDR"
