@@ -20,7 +20,11 @@ echo "configuring master for redis"
 bash "$scriptpath" "$redishost" master
 
 # give master time to recover
-sleep 10
+echo "waiting for master worker threads to get setup"
+sleep 15
+
+echo "making sure minions are reconnected and re-auth their keys"
+salt '*' -v --timeout 120 --out raw test.ping
 
 echo "copying scripts to minion(s)"
 salt-cp '*' "$scriptpath" /root/
@@ -30,10 +34,12 @@ salt '*' cmd.run 'apt-get install -y python-redis'
 
 echo "configuring minions for redis"
 salt '*' cmd.run "bash $scriptpath $redishost minion"
-salt '*' cmd.run 'cat /etc/salt/minion'
+
+echo "giving minions time to reconnect"
+sleep 5
 
 echo 'checking that master and minions are running'
-salt '*' test.ping
+salt '*' -v --out raw test.ping
 echo 'please check that all minions replied to pings'
 
 echo 'checking that redis returner is operational'

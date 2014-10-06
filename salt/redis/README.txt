@@ -19,9 +19,6 @@ you should see a pile of returner output back from the
 last command it runs.
 
 This is still in progress; it seems to work reliably enugh with 0.17.5
-on precise, it will of course be broken in part on lucid because
-lucid's py-redis client does not support lpush, which the salt redis
-returner uses, and 2014.1.10 on trusty has issues with running
-salt commands right after the master restart.  I guess this probably
-has to do with the minion re-auth, and will mean I need to play
-with config settings for the minion and/or the master.
+on precise and with 2014.1.10 on trusty. It will of course be broken
+in part on lucid because lucid's py-redis client does not support
+lpush, which the salt redis returner uses
