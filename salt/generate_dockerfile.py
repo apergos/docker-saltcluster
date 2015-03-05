@@ -41,14 +41,18 @@ def generate(distro):
     depending on the distro, write result to stdout
     """
     if distro == 'lucid':
-        ubuntu_version_text = 'lucid'
-        ubuntu_version_number = '10.04'
+        os_text = 'ubuntu'
+        os_repo = 'archive.ubuntu.com'
+        os_repo_extras = 'universe'
+        os_version_text = 'lucid'
+        os_version_number = '10.04'
         backports = ('RUN echo "deb http://archive.ubuntu.com/ubuntu '
                      'lucid-backports main universe" >> /etc/apt/sources.list')
         preinstall = ('RUN apt-get install -y apt-utils python '
                       'python-pkg-resources python-crypto '
                       'python-jinja2 python-m2crypto python-yaml '
-                      'dctrl-tools python-support')
+                      'dctrl-tools python-support python-dateutil '
+                      'python-apt' )
 
         deps = ("# ubuntu lucid doesn't have these; "
                 "we stole them from the salt ppa\n")
@@ -70,56 +74,97 @@ def generate(distro):
         salt_debs = get_salt_deb_entries([
             '0.17.1-1lucid_all',
             '0.17.5-1lucid1_all',
-            '2014.1.10-1lucid1_all'])
+            '2014.1.10-1lucid1_all',
+            '2014.7.1+ds-3lucid6_all'])
         git = 'git-core'
         ruby = '/usr/lib/ruby/1.8'
         ssldeps = 'RUN apt-get install -y tcpd'
 
     elif distro == 'precise':
-        ubuntu_version_text = 'precise'
-        ubuntu_version_number = '12.04'
+        os_text = 'ubuntu'
+        os_repo = 'archive.ubuntu.com'
+        os_repo_extras = 'universe'
+        os_version_text = 'precise'
+        os_version_number = '12.04'
         backports = ""
         preinstall = ('RUN apt-get install -y apt-utils python '
                       'python-pkg-resources python-crypto '
                       'python-jinja2 python-m2crypto python-yaml '
                       'dctrl-tools msgpack-python python-support '
-                      'libpgm-5.1.0')
+                      'libpgm-5.1.0 python-dateutil python-apt '
+                      'ca-certificates python-chardet python-six')
 
         deps = "# ubuntu precise doesn't have these\n"
         deps += get_dep_entries(['libzmq3_3.2.2+dfsg-1precise_amd64',
-                                 'python-zmq_13.0.0-2precise_amd64'])
+                                 'python-zmq_13.0.0-2precise_amd64',
+                                 'python-requests_2.0.0-1~precise+1_all',
+                                 'python-urllib3_1.7.1-2~precise+1_all'])
         deps += "RUN dpkg -i {path}*.deb\n\n".format(path=DEPS_PATH)
         deps += "RUN apt-get install -y python-requests\n"
 
         salt_debs = get_salt_deb_entries([
             '0.17.1-1precise_all',
             '0.17.5-1precise1_all',
-            '2014.1.10-1precise1_all'])
+            '2014.1.10-1precise1_all',
+            '2014.7.1+ds-3precise1_all'])
         git = 'git'
         ruby = '/usr/lib/ruby/1.8'
         ssldeps = ""
 
     elif distro == 'trusty':
-        ubuntu_version_text = 'trusty'
-        ubuntu_version_number = '14.04'
+        os_text = 'ubuntu'
+        os_repo = 'archive.ubuntu.com'
+        os_repo_extras = 'universe'
+        os_version_text = 'trusty'
+        os_version_number = '14.04'
         backports = ""
         preinstall = ('RUN apt-get install -y apt-utils python '
                       'python-pkg-resources python-crypto '
                       'python-jinja2 python-m2crypto python-zmq '
                       'python-yaml dctrl-tools python-msgpack '
-                      'libzmq3 python-zmq python-requests')
+                      'libzmq3 python-zmq python-requests '
+                      'python-dateutil python-apt')
         deps = ""
         salt_debs = get_salt_deb_entries([
             '0.17.1+dfsg-1_all',
             '0.17.5+ds-1_all',
-            '2014.1.10+ds-1trusty1_all'])
+            '2014.1.10+ds-1trusty1_all',
+            '2014.7.1+ds-3trusty1_all'])
         git = 'git'
         ruby = '/usr/lib/ruby/vendor_ruby'
         ssldeps = ""
 
+    elif distro == 'jessie':
+        os_text = 'debian'
+        os_repo = 'http.debian.net'
+        os_repo_extras = 'contrib'
+        os_version_text = 'jessie'
+        os_version_number = '8.0'
+        backports = ""
+        preinstall = ('RUN apt-get install -y apt-utils python '
+                      'python-pkg-resources python-crypto '
+                      'python-jinja2 python-m2crypto python-zmq '
+                      'python-yaml dctrl-tools python-msgpack '
+                      'libzmq3 python-zmq python-urllib3 python-requests '
+                      'python-dateutil python-apt' )
+        deps = ""
+        salt_debs = get_salt_deb_entries([
+#            '',
+#            '',
+            '2014.1.10+ds-2_all',
+            '2014.7.1+ds-3_all'
+        ])
+        git = 'git'
+        ruby = '/usr/lib/ruby/vendor_ruby'
+        ssldeps = ""
+
+
     dockerfile_contents = open('Dockerfile.tmpl', 'r').read().format(
-        ubuntu_version_text=ubuntu_version_text,
-        ubuntu_version_number=ubuntu_version_number,
+        os_text=os_text,
+        os_version_text=os_version_text,
+        os_version_number=os_version_number,
+        os_repo=os_repo,
+        os_repo_extras=os_repo_extras,
         backports=backports,
         preinstall=preinstall,
         deps=deps,
@@ -188,7 +233,7 @@ def main():
     if distro is None:
         usage("Mandatory argument 'distro' not specified")
 
-    if distro not in ['lucid', 'precise', 'trusty']:
+    if distro not in ['lucid', 'precise', 'trusty', 'jessie']:
         usage("Unknown distro specified")
 
     generate(distro)

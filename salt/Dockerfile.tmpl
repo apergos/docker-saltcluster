@@ -1,11 +1,11 @@
 # base dockerfile for creating salt master and clients in a cluster,
-# this base image uses ubuntu {ubuntu_version_text}; base images may be mixed and matched
+# this base image uses {os_text} {os_version_text}; base images may be mixed and matched
 # one salt minion per container, and one salt master to rule them all
 
-FROM ubuntu:{ubuntu_version_number}
+FROM {os_text}:{os_version_number}
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN echo "deb http://archive.ubuntu.com/ubuntu {ubuntu_version_text} main universe" > /etc/apt/sources.list
+RUN echo "deb http://{os_repo}/{os_text} {os_version_text} main {os_repo_extras}" > /etc/apt/sources.list
 {backports}
 RUN apt-get update && apt-get install -y apt-utils
 
@@ -35,8 +35,6 @@ EXPOSE 4506 4505
 
 # set up puppet for use via puppet apply
 #
-# conf file as provided by the package is installed
-# in /etc/puppet/puppet.conf and doesn't need modification
 # we need no certs or keys
 RUN apt-get install -y puppet-common && mkdir -p /etc/puppet/files
 ADD puppet-salt/fileserver.conf /etc/puppet/fileserver.conf
@@ -47,6 +45,10 @@ ADD puppet-salt/manifests/salt.pp /etc/puppet/manifests/salt.pp
 ADD puppet-salt/salt_key_fingerprint.rb {ruby}/facter/salt_key_fingerprint.rb
 RUN apt-get install -y puppet
 RUN mkdir -p /var/lib/puppet/facts && chown puppet:puppet /var/lib/puppet/facts
+# need to add the templatedir which is not in the default puppet config
+# installed in /etc/puppet/puppet.conf
+RUN sed -e 's|\[main\]|\[main\]\ntemplatedir=/etc/puppet/templates\n|;' /etc/puppet/puppet.conf > /etc/puppet/puppet.conf.new
+RUN mv /etc/puppet/puppet.conf.new /etc/puppet/puppet.conf
 
 # set up puppet-as-a-service for post-startup config
 # of container

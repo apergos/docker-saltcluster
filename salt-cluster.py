@@ -978,7 +978,9 @@ def get_image_name(repo, tag):
     return the name of the image
     (these names are fixed based on the above info)
     """
-    return "%s:%s-%s-%s" % (repo, tag['image'], tag['version'], tag['package'])
+    # only a-zA-Z0-9._- allowed in image names, package names can have + so remove that
+    version_sanitized = tag['version'].replace('+', '_')
+    return "%s:%s-%s-%s" % (repo, tag['image'], version_sanitized, tag['package'])
 
 def get_ip(instance_name):
     """

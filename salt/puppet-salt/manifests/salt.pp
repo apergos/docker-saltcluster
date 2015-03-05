@@ -13,7 +13,10 @@ class salt::minion::conffile ($salt_master = 'salt_master', $master_fingerprint 
 }
 
 class salt::minion ($ensure = false, $salt_master = 'salt_master', $master_fingerprint = '') {
-        include salt::minion::conffile
+        class { 'salt::minion::conffile':
+                salt_master => $salt_master,
+                master_fingerprint => $master_fingerprint
+        }
 
         # ensure should be one of 'stopped' or 'running'
         service { 'salt-minion':

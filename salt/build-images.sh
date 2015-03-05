@@ -9,3 +9,6 @@ docker build --rm -t ariel/salt:precisebase .
 python generate_dockerfile.py -d trusty > Dockerfile
 docker build --rm -t ariel/salt:trustybase .
 
+python generate_dockerfile.py -d jessie > Dockerfile
+docker build --rm -t ariel/salt:jessiebase .
+
