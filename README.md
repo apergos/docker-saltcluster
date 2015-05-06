@@ -6,7 +6,7 @@ salt cluster in docker containers on a single host, intended for
 use in a testing environment.
 
 NOTE: This has been tested (only) on Fedora 20 with docker 0.7.0,
-0.7.5 and 0.7.6.
+0.7.5, 0.7.6 and various versions of docker from 1.0 on.
 
 How to use:
 
@@ -18,8 +18,8 @@ use/testing of the cluster.
     cd salt
     bash ./download_debs.sh
 
-  (supported platforms are lucid, precise, trusty
-  with 0.17.1, 0.17.5, 2014.1.10; other versions can be added if
+  (supported platforms are lucid, precise, trusty, jessie
+  with 0.17.x, 2014.1.x, 2014.7.x; other versions can be added if
   you either send me email with pointers to the packages or
   download them yourself and put them into the staging area 'debs')
 
@@ -78,5 +78,5 @@ information information on this and other options, give the command
 
 python salt-cluster.py --help
 
-License information: copyright Ariel T. Glenn 2013-2014, GPL v2 or later.
+License information: copyright Ariel T. Glenn 2013-2015, GPL v2 or later.
 For details see the file COPYING in this directory.
