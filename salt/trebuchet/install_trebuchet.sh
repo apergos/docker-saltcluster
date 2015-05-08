@@ -143,12 +143,26 @@ if [ -z "$trigger_cloned" ]; then
   ( cat <<'EOF'
 --- a/trigger/drivers/trebuchet/local.py
 +++ b/trigger/drivers/trebuchet/local.py
-@@ -94,8 +94,12 @@ class SyncDriver(drivers.SyncDriver):
+@@ -19,6 +19,8 @@ import trigger.drivers as drivers
+ 
+ import redis
+ 
++import salt.version
++
+ from datetime import datetime
+ from trigger.drivers import SyncDriverError
+ from trigger.drivers import LockDriverError
+@@ -94,8 +96,17 @@ class SyncDriver(drivers.SyncDriver):
      def _checkout(self, args):
          # TODO (ryan-lane): Check return values from these commands
          repo_name = self.conf.config['deploy.repo-name']
 +        if args.force:
-+            runner_args = '[' + repo_name + ',' + str(args.force) + ']'
++            # see https://github.com/saltstack/salt/issues/18317
++            _version_ = salt.version.SaltStackVersion(*salt.version.__version_info__)
++            if (_version_ >= "2014.7.3"):
++                runner_args = '[' + repo_name + ',' + str(args.force) + ']'
++            else:
++                runner_args = repo_name + ',' + str(args.force)
 +        else:
 +            runner_args = repo_name
          p = subprocess.Popen(['sudo','salt-call','-l','quiet','publish.runner',
@@ -157,12 +171,17 @@ if [ -z "$trigger_cloned" ]; then
                               stdout=subprocess.PIPE)
          p.communicate()
  
-@@ -206,9 +210,13 @@ class ServiceDriver(drivers.ServiceDriver):
+@@ -206,9 +217,18 @@ class ServiceDriver(drivers.ServiceDriver):
  
      def restart(self, args):
          repo_name = self.conf.config['deploy.repo-name']
 +        if args.batch:
-+            runner_args = '[' + repo_name + ',' + str(args.batch) + ']'
++            # see https://github.com/saltstack/salt/issues/18317
++            _version_ = salt.version.SaltStackVersion(*salt.version.__version_info__)
++            if (_version_ >= "2014.7.3"):
++                runner_args = '[' + repo_name + ',' + str(args.batch) + ']'
++            else:
++                runner_args = repo_name +',' + str(args.batch)
 +        else:
 +           runner_args = repo_name
          p = subprocess.Popen(['sudo','salt-call','-l','quiet','--out=json',
@@ -185,7 +204,7 @@ if [ -z "${python_git_installed}" ]; then
   salt "$SOMETHING" cmd.run 'apt-get -y install python-setuptools'
 
   # ok on trusty and jessie but not precise, steal a backport. don't even think about lucid for your deployment server.
-  command='grep 12.04 /etc/issue; if [ $? -eq 1 ]; then apt-get -y install python-git; else apt-get -y install curl; curl -o "/root/python-git_0.3.2.RC1-1_all.deb" "http://apt.wikimedia.org/wikimedia/pool/universe/p/python-git/python-git_0.3.2.RC1-1_all.deb"; dpkg -i python-git_0.3.2.RC1-1_all.deb; fi'
+  command='grep 12.04 /etc/issue; if [ $? -eq 1 ]; then apt-get -y install python-git; else apt-get install git-core; apt-get -y install curl; curl -o "/root/python-git_0.3.2.RC1-1_all.deb" "http://apt.wikimedia.org/wikimedia/pool/universe/p/python-git/python-git_0.3.2.RC1-1_all.deb"; dpkg -i /root/python-git_0.3.2.RC1-1_all.deb; fi'
   echo "command is" $command
   salt "$SOMETHING" --timeout 60 cmd.run "$command"
 fi
@@ -275,8 +294,8 @@ if [ -z $testrepo_exists ]; then
   salt "$SOMETHING" cmd.run "mkdir -p /srv/deployment/test/testrepo"
   salt "$SOMETHING" cmd.run "cd /srv/deployment/test/testrepo; git init"
   salt "$SOMETHING" cmd.run 'echo "bla bla" > /srv/deployment/test/testrepo/myfile.txt'
-  salt "$SOMETHING" cmd.run 'git -C /srv/deployment/test/testrepo add myfile.txt'
-  salt "$SOMETHING" cmd.run "bash -c 'HOME=/root git -C /srv/deployment/test/testrepo commit -m junk_for_testing'"
+  salt "$SOMETHING" cmd.run 'git --git-dir=/srv/deployment/test/testrepo/.git --work-tree=/srv/deployment/test/testrepo add myfile.txt'
+  salt "$SOMETHING" cmd.run "bash -c 'HOME=/root git --git-dir=/srv/deployment/test/testrepo/.git --work-tree=/srv/deployment/test/testrepo commit -m junk_for_testing'"
 fi
 
 # set up apache on deployment server
@@ -291,7 +310,7 @@ if [ -z "$apache_conf_done" ]; then
   echo "setting up apache config"
   ( cat <<EOF
 <VirtualHost *:80>
- ServerName $SOMETHING"
+ ServerName $SOMETHING
  ServerAdmin atester@noreply.com
  DocumentRoot /srv/deployment
 
@@ -313,7 +332,7 @@ EOF
   salt-cp "$SOMETHING" /root/apache_deployment_conf /root/apache_deployment_conf
   salt "$SOMETHING" cmd.run "cp /root/apache_deployment_conf /etc/apache2/sites-available/deployment.conf"
   salt "$SOMETHING" cmd.run "cd /etc/apache2/sites-enabled/; ln -s ../sites-available/deployment.conf ."
-  salt "$SOMETHING" cmd.run "cd /etc/apache2/sites-enabled/; rm 000-default.conf"
+  salt "$SOMETHING" cmd.run "rm /etc/apache2/sites-enabled/000-default"
 
   main_conf_fixed=`salt $SOMETHING cmd.run 'egrep "^<Directory /srv" /etc/apache2/apache2.conf 2>/dev/null' | grep srv`
   if [ -z "$main_conf_fixed" ]; then
@@ -321,7 +340,9 @@ EOF
 <Directory /srv/>
         Options Indexes FollowSymLinks
         AllowOverride None
-        Require all granted
+#        Require all granted
+        Order deny,allow
+        allow from all
 </Directory>
 EOF
   ) > /root/apache_additions
