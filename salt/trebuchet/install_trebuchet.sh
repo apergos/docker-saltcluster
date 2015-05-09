@@ -204,7 +204,7 @@ if [ -z "${python_git_installed}" ]; then
   salt "$SOMETHING" cmd.run 'apt-get -y install python-setuptools'
 
   # ok on trusty and jessie but not precise, steal a backport. don't even think about lucid for your deployment server.
-  command='grep 12.04 /etc/issue; if [ $? -eq 1 ]; then apt-get -y install python-git; else apt-get install git-core; apt-get -y install curl; curl -o "/root/python-git_0.3.2.RC1-1_all.deb" "http://apt.wikimedia.org/wikimedia/pool/universe/p/python-git/python-git_0.3.2.RC1-1_all.deb"; dpkg -i /root/python-git_0.3.2.RC1-1_all.deb; fi'
+  command='grep 12.04 /etc/issue; if [ $? -eq 1 ]; then apt-get -y install python-git; else apt-get install git-core; apt-get -y install curl; curl -o "/root/python-git_0.3.2.RC1-1_all.deb" "http://apt.wikimedia.org/wikimedia/pool/universe/p/python-git/python-git_0.3.2.RC1-1_all.deb"; curl -o "/root/python-async_0.6.1-1~precise1_amd64.deb" "http://apt.wikimedia.org/wikimedia/pool/universe/p/python-async/python-async_0.6.1-1~precise1_amd64.deb"; curl -o "/root/python-gitdb_0.5.4-1~precise1_amd64.deb" "http://apt.wikimedia.org/wikimedia/pool/universe/p/python-gitdb/python-gitdb_0.5.4-1~precise1_amd64.deb"; curl -o "/root/python-smmap_0.8.2-1~precise1_all.deb" "http://apt.wikimedia.org/wikimedia/pool/universe/p/python-smmap/python-smmap_0.8.2-1~precise1_all.deb"; dpkg -i "/root/python-smmap_0.8.2-1~precise1_all.deb"; dpkg -i "/root/python-async_0.6.1-1~precise1_amd64.deb"; dpkg -i "/root/python-gitdb_0.5.4-1~precise1_amd64.deb"; dpkg -i "/root/python-git_0.3.2.RC1-1_all.deb"; fi'
   echo "command is" $command
   salt "$SOMETHING" --timeout 60 cmd.run "$command"
 fi
