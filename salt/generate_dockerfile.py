@@ -69,7 +69,9 @@ def generate(distro):
             '0.17.5-1precise1_all',
             '2014.1.10-1precise1_all',
             '2014.7.1+ds-3precise1_all',
-            '2014.7.5+ds-1precise1_all'])
+            '2014.7.5+ds-1precise1_all',
+            '2014.7.5+ds-1precise1+wm2_all'
+        ])
         git = 'git'
         ruby = '/usr/lib/ruby/1.8'
         ssldeps = ""
@@ -94,7 +96,9 @@ def generate(distro):
             '0.17.5+ds-1_all',
             '2014.1.10+ds-1trusty1_all',
             '2014.7.1+ds-3trusty1_all',
-            '2014.7.5+ds-1ubuntu1_all'])
+            '2014.7.5+ds-1ubuntu1_all',
+            '2014.7.5+ds-1ubuntu1+wm2_all'
+        ])
         git = 'git'
         ruby = '/usr/lib/ruby/vendor_ruby'
         ssldeps = ""
@@ -119,7 +123,8 @@ def generate(distro):
 #            '',
             '2014.1.10+ds-2_all',
             '2014.7.1+ds-3_all',
-            '2014.7.5+ds-1_all'
+            '2014.7.5+ds-1_all',
+            '2014.7.5+ds-1+wm2_all'
         ])
         git = 'git'
         ruby = '/usr/lib/ruby/vendor_ruby'
