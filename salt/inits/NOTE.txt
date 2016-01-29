@@ -1,0 +1,2 @@
+These init scripts are taken from the salt git repo,
+branch 2014.7

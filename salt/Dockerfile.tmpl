@@ -26,8 +26,8 @@ RUN mkdir -p /root/depends/ /root/salt/
 RUN apt-get install -y {git} && mkdir -p /src && git clone https://github.com/saltstack/salt.git /src/salt
 
 # set up salt init scripts (can't rely on upstart)
-RUN cat /src/salt/pkg/rpm/salt-master | sed -e 's|usr/bin/salt-master|usr/local/bin/salt-master|g;' > /root/salt-master
-RUN cat /src/salt/pkg/rpm/salt-minion | sed -e 's|usr/bin/salt-minion|usr/local/bin/salt-minion|g;' > /root/salt-minion
+ADD inits/salt-master.init /root/salt-master
+ADD inits/salt-minion.init /root/salt-minion
 
 RUN mkdir -p /srv/runners /srv/salt /srv/pillars
 
