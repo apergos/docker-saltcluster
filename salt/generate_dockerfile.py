@@ -47,6 +47,8 @@ def generate(distro):
         os_version_text = 'precise'
         os_version_number = '12.04'
         backports = ""
+        updates = ('RUN echo "deb http://archive.ubuntu.com/ubuntu '
+                   'precise-updates main universe" >> /etc/apt/sources.list')
         preinstall = ('RUN apt-get install -y apt-utils python '
                       'python-pkg-resources python-crypto '
                       'python-jinja2 python-m2crypto python-yaml '
@@ -79,6 +81,7 @@ def generate(distro):
         os_version_text = 'trusty'
         os_version_number = '14.04'
         backports = ""
+        updates = ""
         preinstall = ('RUN apt-get install -y apt-utils python '
                       'python-pkg-resources python-crypto '
                       'python-jinja2 python-m2crypto python-zmq '
@@ -103,6 +106,7 @@ def generate(distro):
         os_version_text = 'jessie'
         os_version_number = '8.0'
         backports = ""
+        updates = ""
         preinstall = ('RUN apt-get install -y apt-utils python '
                       'python-pkg-resources python-crypto '
                       'python-jinja2 python-m2crypto python-zmq '
@@ -129,6 +133,7 @@ def generate(distro):
         os_repo=os_repo,
         os_repo_extras=os_repo_extras,
         backports=backports,
+        updates=updates,
         preinstall=preinstall,
         deps=deps,
         salt_debs=salt_debs,

@@ -7,6 +7,7 @@ ENV DEBIAN_FRONTEND noninteractive
 
 RUN echo "deb http://{os_repo}/{os_text} {os_version_text} main {os_repo_extras}" > /etc/apt/sources.list
 {backports}
+{updates}
 RUN apt-get update && apt-get install -y apt-utils
 
 # required for salt and/or pupaas
