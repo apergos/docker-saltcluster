@@ -18,7 +18,6 @@ if [ -z "$1" ]; then
   echo "development server and also the redis server."
   exit 1
 fi
-
 SOMETHING="$1"
 
 if [ ! -e "/root/treb-tmp/trebuchet" ]; then
@@ -28,7 +27,11 @@ if [ ! -e "/root/treb-tmp/trebuchet" ]; then
   cd /root/treb-tmp
 
   # install trebuchet pieces to the right place
-  git clone https://github.com/trebuchet-deploy/trebuchet.git
+  # if the directory is already there, we assume user prepopulated it
+  # with the script provided
+  if [ ! -e /root/treb-tmp/trebuchet ]; then
+      git clone https://github.com/trebuchet-deploy/trebuchet.git
+  fi
   mkdir -p /srv/salt/_returners /srv/salt/_modules /srv/runners
 
   cd trebuchet
@@ -69,9 +72,12 @@ if [ ! -e "/root/treb-tmp/trebuchet" ]; then
      return ret_status
 EOF
   ) > /root/deploy.py.patch
-  (cd modules; patch < /root/deploy.py.patch)
-  cp modules/deploy.py /srv/salt/_modules/
-  cd ..
+  needspatch=`grep 'deploy.checkout-submodules true' modules/deploy.py`
+  if [ -z "$needspatch" ]; then
+    (cd modules; patch < /root/deploy.py.patch)
+    cp modules/deploy.py /srv/salt/_modules/
+    cd ..
+  fi
 fi
 
 ipadded=`grep $SOMETHING /etc/hosts`
@@ -128,9 +134,12 @@ fi
 trigger_cloned=`salt $SOMETHING cmd.run 'ls -d /root/trigger-tmp/trigger 2>/dev/null' | grep -v ${SOMETHING}`
 if [ -z "$trigger_cloned" ]; then
   echo "cloning trigger"
-  salt "$SOMETHING" cmd.run "mkdir /root/trigger-tmp; cd /root/trigger-tmp; git clone https://github.com/trebuchet-deploy/trigger.git"
-  echo "patching trigger"
-  ( cat <<'EOF'
+  salt "$SOMETHING" cmd.run "mkdir -p /root/trigger-tmp"
+  cloneexists=`salt "$SOMETHING" cmd.run 'ls /root/trigger-tmp/trigger' | grep -v found`
+  if [ -z "$cloneexists" ]; then
+    salt "$SOMETHING" cmd.run "cd /root/trigger-tmp; git clone https://github.com/trebuchet-deploy/trigger.git"
+    echo "patching trigger"
+    ( cat <<'EOF'
 --- a/trigger/drivers/trebuchet/local.py
 +++ b/trigger/drivers/trebuchet/local.py
 @@ -19,6 +19,8 @@ import trigger.drivers as drivers
@@ -182,9 +191,13 @@ if [ -z "$trigger_cloned" ]; then
          out = p.communicate()[0]
          ## Disabled until salt bug is fixed:
 EOF
-  ) > /root/local.py.patch
-  salt-cp "$SOMETHING" /root/local.py.patch /root/local.py.patch
-  salt "$SOMETHING" cmd.run '(cd /root/trigger-tmp/trigger/trigger/drivers/trebuchet/; patch < /root/local.py.patch)'
+    ) > /root/local.py.patch
+    patchdone=`salt "$SOMETHING" cmd.run 'grep saltstack/salt/issues/18317 /root/trigger-tmp/trigger/drivers/trebuchet/local.py'`
+    if [ -z "$patchdone" ]; then
+        salt-cp "$SOMETHING" /root/local.py.patch /root/local.py.patch
+        salt "$SOMETHING" cmd.run '(cd /root/trigger-tmp/trigger/trigger/drivers/trebuchet/; patch < /root/local.py.patch)'
+    fi
+  fi
 fi
 
 
