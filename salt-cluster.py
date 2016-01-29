@@ -896,7 +896,7 @@ def get_salt_tag_from_text(text):
     fields = text.split(':')
     return {
         'minions': fields[0], # minion count
-        'image': fields[1],   # image base eg precise, lucid etc
+        'image': fields[1],   # image base eg precise, jessie etc
         'version': fields[2], # salt version eg v0.17.1
         'package': fields[3]  # package type eg git deb...
     }

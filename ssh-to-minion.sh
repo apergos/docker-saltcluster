@@ -5,7 +5,7 @@ if [ -z "$1" -o -z "$2" ]; then
     echo
     echo "Usage: $0 <miniontags> <minion-number> [<minion-basename>]"
     echo
-    echo "Example: $0 3:lucid:0.17.1-1lucid_all:deb 2"
+    echo "Example: $0 3:precise:0.17.1-1precise_all:deb 2"
     exit 1
 fi
 

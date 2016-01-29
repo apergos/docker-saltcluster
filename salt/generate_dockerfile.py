@@ -40,47 +40,7 @@ def generate(distro):
     read Dockerfile.tmpl, stuff in appropriate values
     depending on the distro, write result to stdout
     """
-    if distro == 'lucid':
-        os_text = 'ubuntu'
-        os_repo = 'archive.ubuntu.com'
-        os_repo_extras = 'universe'
-        os_version_text = 'lucid'
-        os_version_number = '10.04'
-        backports = ('RUN echo "deb http://archive.ubuntu.com/ubuntu '
-                     'lucid-backports main universe" >> /etc/apt/sources.list')
-        preinstall = ('RUN apt-get install -y apt-utils python '
-                      'python-pkg-resources python-crypto '
-                      'python-jinja2 python-m2crypto python-yaml '
-                      'dctrl-tools python-support python-dateutil '
-                      'python-apt' )
-
-        deps = ("# ubuntu lucid doesn't have these; "
-                "we stole them from the salt ppa\n")
-        deps += get_dep_entries(['libmsgpack3_0.5.4-2_amd64',
-                                 'msgpack-python_0.1.9-2_amd64'])
-        deps += ("# same for these, may not be needed depending "
-                 "on the salt version\n"
-                 "# but we install them anyways\n")
-        deps += get_dep_entries(['libpgm-5.1-0_5.1.116~dfsg-2lucid1_amd64',
-                                 'libzmq3_3.2.2+dfsg-1lucid_amd64',
-                                 'python-zmq_13.0.0-3lucid_amd64',
-                                 'python-py_1.4.12-2lucid_all',
-                                 'python-six_1.2.0-2lucid_all',
-                                 'python-pytest_2.3.4-3lucid_all',
-                                 'python-urllib3_1.5-1lucid_all',
-                                 'python-requests_1.1.0-2lucid_all'])
-        deps += "RUN dpkg -i {path}*.deb\n\n".format(path=DEPS_PATH)
-
-        salt_debs = get_salt_deb_entries([
-            '0.17.1-1lucid_all',
-            '0.17.5-1lucid1_all',
-            '2014.1.10-1lucid1_all',
-            '2014.7.1+ds-3lucid6_all'])
-        git = 'git-core'
-        ruby = '/usr/lib/ruby/1.8'
-        ssldeps = 'RUN apt-get install -y tcpd'
-
-    elif distro == 'precise':
+    if distro == 'precise':
         os_text = 'ubuntu'
         os_repo = 'archive.ubuntu.com'
         os_repo_extras = 'universe'
@@ -200,8 +160,8 @@ create a salt cluster of docker containers.
 
 Options:
 
-  --distro  (-d)  string specifying ubuntu version, one of
-                  'lucid', 'precise', or 'trusty'
+  --distro  (-d)  string specifying ubuntu/debian version, one of
+                  'precise', 'trusty' or 'jessie'
 
   --version (-v)  display the version of this script and exit
 
@@ -236,7 +196,7 @@ def main():
     if distro is None:
         usage("Mandatory argument 'distro' not specified")
 
-    if distro not in ['lucid', 'precise', 'trusty', 'jessie']:
+    if distro not in ['precise', 'trusty', 'jessie']:
         usage("Unknown distro specified")
 
     generate(distro)

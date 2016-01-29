@@ -5,7 +5,7 @@ if [ -z "$1" ]; then
     echo
     echo "Usage: $0 <mastertag> [<salt-master-basename>]"
     echo
-    echo "Example: $0 lucid:0.17.1-1lucid_all:deb"
+    echo "Example: $0 precise:0.17.1-1precise_all:deb"
     exit 1
 fi
 
