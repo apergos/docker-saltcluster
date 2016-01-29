@@ -17,23 +17,6 @@ import re
 
 VERSION = "0.1.8"
 
-class SELinux(object):
-    """
-    in case you're running a specific ubuntu container
-    under an os with selinux enabled, this lets deal
-    with that so things like sshd don't break horribly
-    """
-    @staticmethod
-    def find_mount():
-        'locate the selinux fs mount point via proc'
-        with open('/proc/mounts', 'r') as mountinfo:
-            mounts = mountinfo.read().splitlines()
-        for entry in mounts:
-            if entry.startswith('selinuxfs '):
-                _, mntpoint, _ = entry.split(' ', 2)
-                return mntpoint
-        return None
-
 class DockerError(Exception):
     """
     placeholder for some sort of interesting
@@ -64,13 +47,8 @@ class Docker(object):
     """
     build or run a docker image
     """
-    def __init__(self, docker, selinux_hack):
+    def __init__(self, docker):
         self.docker = docker
-        self.selinux_hack = selinux_hack
-        if selinux_hack:
-            self.host_selinuxfs = SELinux.find_mount()
-        else:
-            self.host_selinuxfs = None
 
     def build(self, dockerfile_contents, image_repo, image_tag):
         """
@@ -102,27 +80,27 @@ class Docker(object):
                              get_image_name(image_repo, image_tag) + "\n")
             raise
 
-    # docker run -i -t -v /sys/fs/selinux:/selinux:ro imagename
+    # docker run -i -t -v imagename
     def create(self, image_name, container_name=None):
         """
         create a container based on a specified image;
         this is the equivalent of the docker-run command
-        this will also provide the selinux volume to
-        the container, if requested
         """
-        config = {"Hostname":"", "Domainname":"", "User":"",
-                  "Memory":0, "MemorySwap":0, "CpuShares":0,
-                  "AttachStdin":True, "AttachStdout":True, "AttachStderr":True,
-                  "PortSpecs":None, "ExposedPorts":{},
-                  "Tty":True, "OpenStdin":True, "StdinOnce":True,
-                  "Env":None, "Cmd":None, "Dns":None,
-                  "Image":image_name,
-                  "VolumesFrom":"",
-                  "WorkingDir":"", "Entrypoint":None,
-                  "NetworkDisabled":False}
-
-        if self.host_selinuxfs:
-            config['Volumes'] = {"/selinux": {}}
+        config = {
+            "Hostname":"", "Domainname":"", "User":"",
+            "AttachStdin":True, "AttachStdout":True, "AttachStderr":True,
+            "Tty":True, "OpenStdin":True, "StdinOnce":True,
+            "Env":None, "Cmd":None,
+            "WorkingDir":"", "Entrypoint":None,
+            "ExposedPorts":{},
+            "Image":image_name,
+            "HostConfig":
+            {
+                "Memory":0, "MemorySwap":0,
+                "CpuShares":0, "Dns":None, "VolumesFrom":None
+            },
+            "NetworkDisabled":False
+        }
 
         config_string = json.dumps(config)
         url = "/containers/create"
@@ -253,9 +231,8 @@ class SaltMaster(object):
     manage configuration, starting and stopping
     a salt master container
     """
-    def __init__(self, prefix, tag_text, puppet, host_selinuxfs):
+    def __init__(self, prefix, tag_text, puppet):
         self.tag = get_salt_tag_from_text("1:" + tag_text)
-        self.host_selinuxfs = host_selinuxfs
         self.hostname = self.get_name(prefix)
         self.fingerprint = None
         self.ip_addr = None
@@ -317,7 +294,7 @@ class SaltMaster(object):
     def start_container(self):
         'start the salt master container'
         if not is_running(self.hostname):
-            start_container(self.hostname, self.host_selinuxfs)
+            start_container(self.hostname)
 
     def get_name(self, prefix):
         """
@@ -344,7 +321,7 @@ class SaltCluster(object):
     """
     def __init__(self, master_prefix, saltminion_prefix, paas_port,
                  docker_path, minion_tags_text, master_tag,
-                 selinux, docker_create, docker_force, verbose):
+                 docker_create, docker_force, verbose):
         self.repo = 'ariel/salt'
         self.verbose = verbose
         self.saltminion_prefix = saltminion_prefix
@@ -358,11 +335,11 @@ class SaltCluster(object):
             self.puppet = None
         self.minion_count = None
         self.docker_force = docker_force
-        self.docker = Docker(docker_path, selinux)
+        self.docker = Docker(docker_path)
         self.minion_ips_hosts = {}
         self.minion_count = self.get_minion_count()
         self.master = SaltMaster(master_prefix, master_tag,
-                                 self.puppet, selinux)
+                                 self.puppet)
         self.queue = None
         self.stop_completed = False
         self.config_completed = False
@@ -446,7 +423,7 @@ class SaltCluster(object):
         self.stop_minion_container(instance_number)
 
         instance_name = self.get_salt_minion_name(instance_number)
-        start_container(instance_name, self.docker.host_selinuxfs)
+        start_container(instance_name)
 
     def start_cluster(self, instance_no=None):
         """
@@ -848,24 +825,18 @@ def update_etc_hosts(instance_name, hosts_ips):
         hosts.write(contents)
 
 
-def start_container(instance_name, host_selinuxfs):
+def start_container(instance_name):
     """
-    start a container via the docker api,
-    including a mount of the dreaded selinux fs
-    if necessary
+    start a container via the docker api
     """
     url = "/containers/" + instance_name + "/start"
-    config = {#"Binds":["/sys/fs/selinux:/selinux:ro"],
-              "ContainerIDFile":"",
+    config = {"ContainerIDFile":"",
               "LxcConf":[],
               "Privileged":False,
               "PortBindings":{},
               "Links":None,
               "PublishAllPorts":False
           }
-
-#    if host_selinuxfs:
-#        config['Binds'] = [host_selinuxfs + ':/selinux:ro']
 
     config_string = json.dumps(config)
     get_url(url, "POST", config_string)
@@ -1054,7 +1025,7 @@ def usage(message=None):
     help_text = """Usage: salt-cluster.py --miniontags string --mastertag string
                           [--master string] [--prefix string]
                           [--docker string] [--port num]
-                          [--create] [--force] [--selinux]
+                          [--create] [--force]
                           [--start] [--configure] [--stop]
                           [--delete] [--purge] [--version] [--help]
 
@@ -1091,12 +1062,6 @@ Options:
                     default: 8001
   --create    (-c)  create instances
   --force     (-f)  create containers / images even if they already exist
-                    this option can only be used with 'create'
-  --selinux   (-s)  mount selinuxfs from host on /selinux ro
-                    this is a hack that allows apps in the container
-                    to behave as though selinux is disabled (when run
-                    with the right libselinux1), even if the kernel
-                    has it enabled
                     this option can only be used with 'create'
   --start     (-s)  start instances
   --configure (-C)  configure running instances
@@ -1157,7 +1122,6 @@ def main():
     saltminion_prefix = 'minion'
     pupaas_port = 8010
     docker = "/usr/bin/docker"
-    selinux = False
     create = False
     force = False
     miniontags = None
@@ -1172,10 +1136,10 @@ def main():
 
     try:
         (options, remainder) = getopt.gnu_getopt(
-            sys.argv[1:], "M:m:d:p:P:t:T:i:HCfsSDVvh",
+            sys.argv[1:], "M:m:d:p:P:t:T:i:CfsSDVvh",
             ["master=", "mastertag=", "minion=", "docker=",
              "port=", "miniontags=", "matertag=",
-             "instance=", "selinuxhack", "create",
+             "instance=", "create",
              "force", "start", "configure", "stop",
              "delete", "purge",
              "verbose", "version", "help"])
@@ -1201,8 +1165,6 @@ def main():
             miniontags = val
         elif opt in ["-T", "--mastertag"]:
             mastertag = val
-        elif opt in ["-H", "--selinuxhack"]:
-            selinux = True
         elif opt in ["-c", "--create"]:
             create = True
         elif opt in ["-C", "--configure"]:
@@ -1238,7 +1200,7 @@ def main():
         usage("The mandatory option 'mastertag' was not specified.\n")
 
     cluster = SaltCluster(saltmaster_prefix, saltminion_prefix, pupaas_port,
-                    docker, miniontags, mastertag, selinux, create,
+                    docker, miniontags, mastertag, create,
                     force, verbose)
     actions = {'create': create, 'start': start,
                'configure': configure, 'stop': stop,
