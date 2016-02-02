@@ -57,24 +57,23 @@ check_depserver_responsive(){
     salt "$host" test.ping | grep "$host" || (echo "$host not responsive to test.ping, exiting" ; return 1)
 }
 
-set_up_and_patch_trebuchet() {
-  echo "setting up trebuchet on master"
-
+clone_trebuchet(){
   mkdir -p /root/treb-tmp
   cd /root/treb-tmp
 
-  # install trebuchet pieces to the right place
   # if the directory is already there, we assume user prepopulated it
   # with the script provided
   if [ ! -e /root/treb-tmp/trebuchet ]; then
       echo "cloning the github trebuchet repo"
       git clone https://github.com/trebuchet-deploy/trebuchet.git
   fi
+}
+
+patch_trebuchet() {
+  echo "patching trebuchet on master"
   mkdir -p /srv/salt/_returners /srv/salt/_modules /srv/runners
 
-  cd trebuchet
-  cp runners/deploy.py /srv/runners/
-  cp returners/deploy_redis.py /srv/salt/_returners/
+  cd /root/treb-tmp/trebuchet
   # patch the module til it's updated for yaml arg syntax
   ( cat <<'EOF'
 --- deploy.py   2015-05-04 20:25:09.965296025 +0000
@@ -114,9 +113,16 @@ EOF
   if [ -z "$needspatch" ]; then
     echo "patching trebuchet"
     (cd modules; patch < /root/deploy.py.patch)
-    cp modules/deploy.py /srv/salt/_modules/
-    cd ..
   fi
+}
+
+setup_trebuchet(){
+  echo "setting up trebuchet on master"
+  cd /root/treb-tmp
+  cd trebuchet
+  cp runners/deploy.py /srv/runners/
+  cp returners/deploy_redis.py /srv/salt/_returners/
+  cp modules/deploy.py /srv/salt/_modules/
 }
 
 add_deployserver_ip_on_cluster(){
@@ -389,7 +395,9 @@ install_trigger(){
 check_running_on_master
 check_args "$1"
 check_depserver_responsive $DEPSERVER || exit 1
-[ ! -e "/root/treb-tmp/trebuchet" ] && set_up_and_patch_trebuchet
+[ ! -e "/root/treb-tmp/trebuchet" ] && clone_trebuchet
+patch_trebuchet
+setup_trebuchet
 grep $DEPSERVER /etc/hosts  > /dev/null || add_deployserver_ip_on_cluster
 grep pillar_roots /etc/salt/master > /dev/null || add_trebuchet_opts_saltmaster
 check_exists "python-redis" "pkg" "$DEPSERVER" && install_pyredis_bindings
