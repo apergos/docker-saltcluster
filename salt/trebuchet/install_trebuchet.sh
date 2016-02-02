@@ -364,18 +364,30 @@ EOF
 
   main_conf_fixed=`salt $DEPSERVER cmd.run 'egrep "^<Directory /srv" /etc/apache2/apache2.conf 2>/dev/null' | grep srv`
   if [ -z "$main_conf_fixed" ]; then
-  ( cat <<'EOF'
+      oldversion=`salt $DEPSERVER cmd.run 'dpkg -l apache2 | grep 2.2'`
+      if [ ! -z "$oldversion" ]; then
+        ( cat <<'EOF'
 <Directory /srv/>
         Options Indexes FollowSymLinks
         AllowOverride None
-#        Require all granted
         Order deny,allow
         allow from all
 </Directory>
 EOF
-  ) > /root/apache_additions
-    salt-cp "$DEPSERVER" /root/apache_additions /root/apache_additions
-    salt "$DEPSERVER" cmd.run "cat /root/apache_additions >> /etc/apache2/apache2.conf"
+        ) > /root/apache_additions
+      else
+        ( cat <<'EOF'
+<Directory /srv/>
+        Options Indexes FollowSymLinks
+        AllowOverride None
+        Require all granted
+        Order deny,allow
+</Directory>
+EOF
+        ) > /root/apache_additions
+      fi
+      salt-cp "$DEPSERVER" /root/apache_additions /root/apache_additions
+      salt "$DEPSERVER" cmd.run "cat /root/apache_additions >> /etc/apache2/apache2.conf"
   fi
 }
 
