@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# for wmf testing purposes use a precise host for the deployment server
+# for wmf testing purposes use a jessie host for the deployment server
 
 # check that we are on the salt master
 is_master_running=`pgrep salt-master`
@@ -30,6 +30,7 @@ if [ ! -e "/root/treb-tmp/trebuchet" ]; then
   # if the directory is already there, we assume user prepopulated it
   # with the script provided
   if [ ! -e /root/treb-tmp/trebuchet ]; then
+      echo "cloning the github trebuchet repo"
       git clone https://github.com/trebuchet-deploy/trebuchet.git
   fi
   mkdir -p /srv/salt/_returners /srv/salt/_modules /srv/runners
@@ -74,6 +75,7 @@ EOF
   ) > /root/deploy.py.patch
   needspatch=`grep 'deploy.checkout-submodules true' modules/deploy.py`
   if [ -z "$needspatch" ]; then
+    echo "patching trebuchet"
     (cd modules; patch < /root/deploy.py.patch)
     cp modules/deploy.py /srv/salt/_modules/
     cd ..
@@ -135,11 +137,8 @@ trigger_cloned=`salt $SOMETHING cmd.run 'ls -d /root/trigger-tmp/trigger 2>/dev/
 if [ -z "$trigger_cloned" ]; then
   echo "cloning trigger"
   salt "$SOMETHING" cmd.run "mkdir -p /root/trigger-tmp"
-  cloneexists=`salt "$SOMETHING" cmd.run 'ls /root/trigger-tmp/trigger' | grep -v found`
-  if [ -z "$cloneexists" ]; then
-    salt "$SOMETHING" cmd.run "cd /root/trigger-tmp; git clone https://github.com/trebuchet-deploy/trigger.git"
-    echo "patching trigger"
-    ( cat <<'EOF'
+  salt "$SOMETHING" cmd.run "cd /root/trigger-tmp; git clone https://github.com/trebuchet-deploy/trigger.git"
+  ( cat <<'EOF'
 --- a/trigger/drivers/trebuchet/local.py
 +++ b/trigger/drivers/trebuchet/local.py
 @@ -19,6 +19,8 @@ import trigger.drivers as drivers
@@ -191,12 +190,12 @@ if [ -z "$trigger_cloned" ]; then
          out = p.communicate()[0]
          ## Disabled until salt bug is fixed:
 EOF
-    ) > /root/local.py.patch
-    patchdone=`salt "$SOMETHING" cmd.run 'grep saltstack/salt/issues/18317 /root/trigger-tmp/trigger/drivers/trebuchet/local.py'`
-    if [ -z "$patchdone" ]; then
-        salt-cp "$SOMETHING" /root/local.py.patch /root/local.py.patch
-        salt "$SOMETHING" cmd.run '(cd /root/trigger-tmp/trigger/trigger/drivers/trebuchet/; patch < /root/local.py.patch)'
-    fi
+  ) > /root/local.py.patch
+  patchdone=`salt "$SOMETHING" cmd.run 'grep saltstack/salt/issues/18317 /root/trigger-tmp/trigger/drivers/trebuchet/local.py'`
+  if [ -z "$patchdone" ]; then
+      echo "patching trigger"
+      salt-cp "$SOMETHING" /root/local.py.patch /root/local.py.patch
+      salt "$SOMETHING" cmd.run '(cd /root/trigger-tmp/trigger/trigger/drivers/trebuchet/; patch < /root/local.py.patch)'
   fi
 fi
 
