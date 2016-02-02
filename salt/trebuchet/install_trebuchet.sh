@@ -360,7 +360,7 @@ EOF
   salt-cp "$DEPSERVER" /root/apache_deployment_conf /root/apache_deployment_conf
   salt "$DEPSERVER" cmd.run "cp /root/apache_deployment_conf /etc/apache2/sites-available/deployment.conf"
   salt "$DEPSERVER" cmd.run "cd /etc/apache2/sites-enabled/; ln -s ../sites-available/deployment.conf ."
-  salt "$DEPSERVER" cmd.run "rm /etc/apache2/sites-enabled/000-default"
+  salt "$DEPSERVER" cmd.run "rm -f /etc/apache2/sites-enabled/000-default /etc/apache2/sites-enabled/000-default.conf"
 
   main_conf_fixed=`salt $DEPSERVER cmd.run 'egrep "^<Directory /srv" /etc/apache2/apache2.conf 2>/dev/null' | grep srv`
   if [ -z "$main_conf_fixed" ]; then
